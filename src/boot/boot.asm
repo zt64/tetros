@@ -39,14 +39,14 @@ stack_top:
 section .rodata
 gdt64:
     dq 0
-    dq (1<<43) | (1<<44) | (1<<47) | (1<<53)     ; code segment (64-bit)
-    dq (1<<44) | (1<<47) | (1<<41)               ; data segment (64-bit)
+    dq 0x00af9b000000ffff     ; code segment (64-bit)
+    dq 0x00af93000000ffff     ; data segment (64-bit)
 .pointer:
     dw $ - gdt64 - 1
     dq gdt64
 
 section .text
-extern kernel_main
+extern long_mode_start
 global start
 start:
 	mov esp, stack_top  ; setup stack pointer
@@ -108,50 +108,4 @@ enable_paging:
     or eax, 1 << 31
     mov cr0, eax
 
-    ret
-
-BITS 64
-long_mode_start:
-    ; load data segment selector into all data segment registers
-    mov ax, 0x10      ; GDT data segment
-    mov ss, ax
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-
-	call kernel_main
-
-	pop rdi
-	pop rsi
-
-	cli
-.hang:
-	hlt
-	jmp .hang
-
-global gdt_flush
-extern gp
-gdt_flush:
-    lgdt [gp]           ; Load the GDT pointer
-
-    mov rax, .reload_cs
-    push 0x08           ; Push code segment selector (offset into GDT)
-    push rax
-    retfq               ; Far return to reload CS
-
-.reload_cs:
-    ; Reload data segment registers
-    mov ax, 0x10        ; Data segment selector (offset 0x10 in GDT)
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
-    ret
-
-global idt_load
-extern idtr
-idt_load:
-    lidt [idtr]
     ret
