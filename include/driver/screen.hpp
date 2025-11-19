@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <kernel/multiboot.h>
 
 extern uint8_t* fb_addr;
 extern uint32_t fb_width;
@@ -8,7 +9,7 @@ extern uint32_t fb_height;
 extern uint32_t fb_pitch;
 extern uint8_t fb_bpp;
 
-void fb_init(uint32_t multiboot_info_ptr);
+void fb_init(const multiboot_tag_framebuffer *fb_tag);
 
 namespace screen {
     void draw_char(unsigned char c, uint32_t x, uint32_t y, uint32_t fgcolor, uint32_t bgcolor);

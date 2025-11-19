@@ -37,13 +37,6 @@ void* memset(void* dest, const uint8_t val, const size_t count) {
     return dest;
 }
 
-void* memset2(void* dest, const uint8_t val, const size_t count) {
-    auto* p = static_cast<uint8_t *>(dest);
-    for (size_t i = 0; i < count; i++) {
-        p[i] = static_cast<uint8_t>(val);
-    }
-    return dest;
-}
 void* memmove(void* dst_ptr, const void* src_ptr, const size_t size) {
     const auto dst = static_cast<unsigned char *>(dst_ptr);
     const auto src = static_cast<const unsigned char *>(src_ptr);

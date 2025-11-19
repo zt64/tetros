@@ -32,6 +32,10 @@ p3_table:
     resb 4096
 p2_table:
     resb 4096
+p1_table_0:
+    resb 4096
+p1_table_1:
+    resb 4096
 stack_bottom:
     resb 16384
 stack_top:
@@ -64,13 +68,16 @@ start:
 set_up_page_tables:
     ; map first P4 entry to P3 table
     mov eax, p3_table
-    or eax, 0b11 ; present + writable
+    or eax, 0x3 ; present + writable
     mov [p4_table], eax
 
-    ; map first P3 entry to P2 table
-    mov eax, p2_table
-    or eax, 0b11 ; present + writable
-    mov [p3_table], eax
+    mov esi, p2_table
+
+.map_p3_entries:
+    mov eax, esi
+    or eax, 0x3 ; present + writable
+    mov [p3_table + ecx * 8], eax
+    add esi, 4096
 
     mov ecx, 0         ; counter variable
 

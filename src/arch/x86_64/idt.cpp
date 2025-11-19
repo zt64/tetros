@@ -25,7 +25,7 @@ void idt_init() {
     idtr.base = reinterpret_cast<uintptr_t>(&idt);
 
     /* Clear out the entire IDT, initializing it to zeros */
-    memset2(&idt, 0, sizeof(idt_entry_t) * 256);
+    memset(&idt, 0, sizeof(idt_entry_t) * 256);
 
     isrs_init();
 

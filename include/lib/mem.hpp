@@ -7,9 +7,6 @@ void* memcpy(void* dest, const void* src, size_t size);
 
 void* memset(void* dest, uint8_t val, size_t count);
 
-void* memset2(void* dest, uint8_t val, size_t count);
-
-
 void* memmove(void* dst_ptr, const void* src_ptr, size_t size);
 
 void* malloc(size_t size);

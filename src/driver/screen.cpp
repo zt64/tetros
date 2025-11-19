@@ -17,50 +17,13 @@ static constexpr size_t VGA_BUFFER_BYTES = (640 * 480 * 32) / 8;
 
 static uint8_t vga_buffer[VGA_BUFFER_BYTES] = {};
 
-void fb_init(const uint32_t multiboot_info_ptr) {
-    for (auto* tag = reinterpret_cast<multiboot_tag *>(multiboot_info_ptr + 8);
-         tag->type != MULTIBOOT_TAG_TYPE_END;
-         tag = reinterpret_cast<multiboot_tag *>(reinterpret_cast<uint8_t *>(tag) + ((tag->size + 7) & ~7))) {
-        switch (tag->type) {
-            case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
-                serial::printf(
-                    "mem_lower = %uKB, mem_upper = %uKB\n",
-                    reinterpret_cast<multiboot_tag_basic_meminfo *>(tag)->mem_lower,
-                    reinterpret_cast<multiboot_tag_basic_meminfo *>(tag)->mem_upper
-                );
-                break;
-            case MULTIBOOT_TAG_TYPE_MMAP: {
-                serial::printf("mmap\n");
-
-                for (multiboot_memory_map_t* mmap = reinterpret_cast<multiboot_tag_mmap *>(tag)->entries;
-                     reinterpret_cast<multiboot_uint8_t *>(mmap)
-                     < reinterpret_cast<multiboot_uint8_t *>(tag) + tag->size;
-                     mmap = mmap
-                            + reinterpret_cast<multiboot_tag_mmap *>(tag)->
-                            entry_size)
-                    serial::printf(
-                        " base_addr = 0x%x%x,"
-                        " length = 0x%x%x, type = 0x%x\n",
-                        static_cast<unsigned>(mmap->addr >> 32),
-                        static_cast<unsigned>(mmap->addr & 0xffffffff),
-                        static_cast<unsigned>(mmap->len >> 32),
-                        static_cast<unsigned>(mmap->len & 0xffffffff),
-                        static_cast<unsigned>(mmap->type)
-                    );
-            }
-            break;
-            case MULTIBOOT_TAG_TYPE_FRAMEBUFFER: {
-                const auto* fb_tag = reinterpret_cast<multiboot_tag_framebuffer *>(tag);
-                fb_addr = reinterpret_cast<uint8_t *>(fb_tag->common.framebuffer_addr);
-                fb_width = fb_tag->common.framebuffer_width;
-                fb_height = fb_tag->common.framebuffer_height;
-                fb_pitch = fb_tag->common.framebuffer_pitch;
-                fb_bpp = fb_tag->common.framebuffer_bpp;
-                break;
-            }
-            default: break;
-        }
-    }
+void fb_init(const multiboot_tag_framebuffer *fb_tag) {
+    fb_addr = reinterpret_cast<uint8_t *>(fb_tag->common.framebuffer_addr);
+    fb_width = fb_tag->common.framebuffer_width;
+    fb_height = fb_tag->common.framebuffer_height;
+    fb_pitch = fb_tag->common.framebuffer_pitch;
+    fb_bpp = fb_tag->common.framebuffer_bpp;
+    serial::printf("Framebuffer: %ux%u, %u bpp\n", fb_width, fb_height, fb_bpp);
 }
 
 namespace screen {
@@ -172,13 +135,10 @@ namespace screen {
     }
 
     void clear() {
-        serial::print("Clearing screen...\n");
         memset(vga_buffer, 0, VGA_BUFFER_BYTES);
     }
 
     void flush() {
-        serial::print("Flushing screen...\n");
         memcpy(fb_addr, vga_buffer, VGA_BUFFER_BYTES);
-        serial::print("Flushed buffer\n");
     }
 }

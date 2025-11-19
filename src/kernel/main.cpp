@@ -10,30 +10,29 @@
 #include "lib/rand.hpp"
 #include "tetris/tetris.hpp"
 
-void parse_multiboot_info(const uint64_t multiboot_info_ptr) {
-    for (auto* tag = reinterpret_cast<multiboot_tag *>(multiboot_info_ptr + 8);
-         tag->type != MULTIBOOT_TAG_TYPE_END;
+static void parse_multiboot_info(const uint64_t multiboot_info_ptr) {
+    auto* tag_start = reinterpret_cast<multiboot_tag *>(multiboot_info_ptr + 8);
+
+    for (auto* tag = tag_start; tag->type != MULTIBOOT_TAG_TYPE_END;
          tag = reinterpret_cast<multiboot_tag *>(reinterpret_cast<uint8_t *>(tag) + ((tag->size + 7) & ~7))) {
         switch (tag->type) {
-            case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
-                serial::printf(
-                    "mem_lower = %uKB, mem_upper = %uKB\n",
-                    reinterpret_cast<multiboot_tag_basic_meminfo *>(tag)->mem_lower,
-                    reinterpret_cast<multiboot_tag_basic_meminfo *>(tag)->mem_upper
-                );
+            case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO: {
+                const auto* meminfo = reinterpret_cast<multiboot_tag_basic_meminfo *>(tag);
+                serial::printf("mem_lower = %uKB, mem_upper = %uKB\n", meminfo->mem_lower, meminfo->mem_upper);
                 break;
+            }
+
             case MULTIBOOT_TAG_TYPE_MMAP: {
                 serial::printf("mmap\n");
+                auto* mmap_tag = reinterpret_cast<multiboot_tag_mmap *>(tag);
+                const auto* tag_end = reinterpret_cast<multiboot_uint8_t *>(tag) + tag->size;
 
-                for (multiboot_memory_map_t* mmap = reinterpret_cast<multiboot_tag_mmap *>(tag)->entries;
-                     reinterpret_cast<multiboot_uint8_t *>(mmap)
-                     < reinterpret_cast<multiboot_uint8_t *>(tag) + tag->size;
-                     mmap = mmap
-                            + reinterpret_cast<multiboot_tag_mmap *>(tag)->
-                            entry_size)
+                for (auto* mmap = mmap_tag->entries;
+                     reinterpret_cast<multiboot_uint8_t *>(mmap) < tag_end;
+                     mmap = reinterpret_cast<multiboot_memory_map_t *>(
+                         reinterpret_cast<multiboot_uint8_t *>(mmap) + mmap_tag->entry_size)) {
                     serial::printf(
-                        " base_addr = 0x%x%x,"
-                        " length = 0x%x%x, type = 0x%x\n",
+                        " base_addr = 0x%x%x, length = 0x%x%x, type = 0x%x\n",
                         static_cast<unsigned>(mmap->addr >> 32),
                         static_cast<unsigned>(mmap->addr & 0xffffffff),
                         static_cast<unsigned>(mmap->len >> 32),
@@ -42,22 +41,21 @@ void parse_multiboot_info(const uint64_t multiboot_info_ptr) {
                     );
                 }
                 break;
-            case MULTIBOOT_TAG_TYPE_ELF_SECTIONS: {
-                serial::printf("elf sections\n");
-                const auto* sections_tag = reinterpret_cast<multiboot_tag_elf_sections *>(tag);
-                // TODO
-                break;
             }
+
+            case MULTIBOOT_TAG_TYPE_ELF_SECTIONS:
+                serial::printf("elf sections\n");
+                // ELF sections parsing not yet implemented
+                break;
+
             case MULTIBOOT_TAG_TYPE_FRAMEBUFFER: {
                 const auto* fb_tag = reinterpret_cast<multiboot_tag_framebuffer *>(tag);
-                fb_addr = reinterpret_cast<uint8_t *>(fb_tag->common.framebuffer_addr);
-                fb_width = fb_tag->common.framebuffer_width;
-                fb_height = fb_tag->common.framebuffer_height;
-                fb_pitch = fb_tag->common.framebuffer_pitch;
-                fb_bpp = fb_tag->common.framebuffer_bpp;
+                fb_init(fb_tag);
                 break;
             }
-            default: break;
+
+            default:
+                break;
         }
     }
 }
@@ -84,7 +82,8 @@ static void init_hardware() {
     serial::printf("Interrupts enabled!\n\nReady\n");
 }
 
-[[noreturn]] static void game_loop() {
+[[noreturn]]
+static void game_loop() {
     kb_register_listener(Tetris::handle_key);
 
     for (;;) {
@@ -110,8 +109,6 @@ extern "C" [[noreturn]] void kernel_main(const uint64_t multiboot_magic, const u
 
     parse_multiboot_info(multiboot_info_ptr);
     init_hardware();
-
     srand(get_time());
-
     game_loop();
 }
