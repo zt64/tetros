@@ -1,0 +1,5 @@
+.idea/
+.run/
+build/
+cmake-build-debug/
+iso/
