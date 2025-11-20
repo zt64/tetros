@@ -1,3 +1,5 @@
+#include <kernel/paging.hpp>
+
 #include "driver/cmos.hpp"
 #include "driver/keyboard.hpp"
 #include "driver/screen.hpp"
@@ -32,13 +34,12 @@ static void parse_multiboot_info(const uint64_t multiboot_info_ptr) {
                      mmap = reinterpret_cast<multiboot_memory_map_t *>(
                          reinterpret_cast<multiboot_uint8_t *>(mmap) + mmap_tag->entry_size)) {
                     serial::printf(
-                        " base_addr = 0x%x%x, length = 0x%x%x, type = 0x%x\n",
-                        static_cast<unsigned>(mmap->addr >> 32),
-                        static_cast<unsigned>(mmap->addr & 0xffffffff),
-                        static_cast<unsigned>(mmap->len >> 32),
-                        static_cast<unsigned>(mmap->len & 0xffffffff),
-                        static_cast<unsigned>(mmap->type)
+                        " base_addr = 0x%016llX, length = 0x%016llX, type = 0x%X\n",
+                        mmap->addr,
+                        mmap->len,
+                        mmap->type
                     );
+
                 }
                 break;
             }
@@ -60,8 +61,29 @@ static void parse_multiboot_info(const uint64_t multiboot_info_ptr) {
     }
 }
 
-static void init_hardware() {
+extern "C" void start_long_mode();
+
+extern "C" void kernel_entry32(const uint64_t multiboot_magic, const uint64_t multiboot_info_ptr) {
+    paging::init();
+    start_long_mode();
+}
+
+extern "C" [[noreturn]] void kernel_entry64(const uint64_t multiboot_magic, const uint64_t multiboot_info_ptr) {
+    serial::init();
+
+    // Check to ensure booted by a multiboot2 compliant bootloader
+    if (multiboot_magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
+        panic("multiboot magic number is incorrect");
+    }
+
+    if (multiboot_info_ptr & 7) {
+        panic("Unaligned mbi: 0x%x\n", multiboot_info_ptr);
+    }
+
     serial::printf("Initializing kernel...\n");
+    serial::printf("Multiboot header size: %d\n", reinterpret_cast<multiboot_header*>(multiboot_info_ptr)->header_length);
+
+    parse_multiboot_info(multiboot_info_ptr);
 
     gdt_init();
     serial::printf("GDT initialized\n");
@@ -80,11 +102,16 @@ static void init_hardware() {
 
     asm volatile("sti");
     serial::printf("Interrupts enabled!\n\nReady\n");
-}
 
-[[noreturn]]
-static void game_loop() {
+    srand(get_time());
+
     kb_register_listener(Tetris::handle_key);
+
+    // Testing paging read/write
+    auto* location = reinterpret_cast<uint32_t *>(fb_addr + fb_pitch * 320 + 240 * 4);
+    *location = 0x1ed760;
+    serial::printf("%p\n", location);
+    serial::printf("%x\n", *location);
 
     for (;;) {
         kb_process_queue();
@@ -93,22 +120,4 @@ static void game_loop() {
         screen::flush();
         timer_wait_ms(10); // ~100 FPS
     }
-}
-
-extern "C" [[noreturn]] void kernel_main(const uint64_t multiboot_magic, const uint64_t multiboot_info_ptr) {
-    serial::init();
-
-    // Check to ensure booted by a multiboot2 compliant bootloader
-    if (multiboot_magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
-        panic("multiboot magic number is incorrect");
-    }
-
-    if (multiboot_info_ptr & 7) {
-        panic("Unaligned mbi: 0x%x\n", multiboot_info_ptr);
-    }
-
-    parse_multiboot_info(multiboot_info_ptr);
-    init_hardware();
-    srand(get_time());
-    game_loop();
 }

@@ -28,10 +28,10 @@ target_link_options(${KERNEL_TARGET} PRIVATE
 )
 
 find_program(GRUB_MKRESCUE NAMES grub-mkrescue grub2-mkrescue)
-if(NOT GRUB_MKRESCUE)
+if (NOT GRUB_MKRESCUE)
     message(WARNING "grub-mkrescue not found")
     return()
-endif()
+endif ()
 
 set(ISO_DIR ${CMAKE_BINARY_DIR}/iso)
 set(ISO_OUTPUT ${CMAKE_BINARY_DIR}/tetros.iso)
@@ -57,16 +57,3 @@ add_custom_command(TARGET ${KERNEL_TARGET} POST_BUILD
         COMMENT "Creating bootable ISO"
         VERBATIM
 )
-
-find_program(QEMU_SYSTEM qemu-system-x86_64)
-if(QEMU_SYSTEM)
-    add_custom_target(run
-            COMMAND ${QEMU_SYSTEM} -cdrom ${ISO_OUTPUT} -serial stdio
-            -audiodev pa,id=speaker -machine pcspk-audiodev=speaker -no-reboot -no-shutdown
-            DEPENDS ${KERNEL_TARGET}
-            COMMENT "Running in QEMU"
-            USES_TERMINAL
-    )
-else()
-    message(WARNING "${QEMU_SYSTEM} not found")
-endif()

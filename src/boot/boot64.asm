@@ -1,8 +1,8 @@
 BITS 64
 
-global long_mode_start
-extern kernel_main
-long_mode_start:
+global start64
+extern kernel_entry64
+start64:
     ; load data segment selector into all data segment registers
     mov ax, 0x10      ; GDT data segment
     mov ss, ax
@@ -11,10 +11,7 @@ long_mode_start:
     mov fs, ax
     mov gs, ax
 
-	call kernel_main
-
-	pop rdi
-	pop rsi
+	call kernel_entry64
 
 	cli
 .hang:

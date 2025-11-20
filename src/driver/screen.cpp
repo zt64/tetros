@@ -7,7 +7,7 @@
 #include "lib/font8x8.hpp"
 #include "lib/mem.hpp"
 
-uint8_t* fb_addr = nullptr;
+uint64_t* fb_addr = nullptr;
 uint32_t fb_width = 0;
 uint32_t fb_height = 0;
 uint32_t fb_pitch = 0;
@@ -18,12 +18,12 @@ static constexpr size_t VGA_BUFFER_BYTES = (640 * 480 * 32) / 8;
 static uint8_t vga_buffer[VGA_BUFFER_BYTES] = {};
 
 void fb_init(const multiboot_tag_framebuffer *fb_tag) {
-    fb_addr = reinterpret_cast<uint8_t *>(fb_tag->common.framebuffer_addr);
+    fb_addr = reinterpret_cast<uint64_t *>(fb_tag->common.framebuffer_addr);
     fb_width = fb_tag->common.framebuffer_width;
     fb_height = fb_tag->common.framebuffer_height;
     fb_pitch = fb_tag->common.framebuffer_pitch;
     fb_bpp = fb_tag->common.framebuffer_bpp;
-    serial::printf("Framebuffer: %ux%u, %u bpp\n", fb_width, fb_height, fb_bpp);
+    serial::printf("Framebuffer: addr: 0x%p %ux%u, %u bpp\n", fb_addr, fb_width, fb_height, fb_bpp);
 }
 
 namespace screen {

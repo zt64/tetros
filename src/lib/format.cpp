@@ -1,10 +1,8 @@
-#include <cstdarg>
-
 #include "lib/format.hpp"
 
+#include <cstdarg>
 #include <cwchar>
 
-#include "driver/screen.hpp"
 #include "driver/serial.hpp"
 #include "lib/mem.hpp"
 #include "lib/string.hpp"
@@ -119,26 +117,21 @@ char* vformat(const char* format, va_list args) {
     int pos = 0;
     char intStrBuffer[256] = {};
 
-    // memset(outputBuffer, 0, sizeof(outputBuffer)); TODO: Why does this cause triple fault
-
-    if (!format) {
-        return outputBuffer;
-    }
-
     for (int i = 0; format[i]; ++i) {
-        if (format[i] == '%') {
-            char length = '\0';
+        char length = '\0';
 
-            int lengthSpec = 0;
-            int precSpec = 0;
-            bool leftJustify = false;
-            bool zeroPad = false;
-            bool spaceNoSign = false;
-            bool altForm = false;
-            bool plusSign = false;
-            bool emode = false;
-            int expo = 0;
-            char specifier = '\0';
+        int lengthSpec = 0;
+        int precSpec = 0;
+        bool leftJustify = false;
+        bool zeroPad = false;
+        bool spaceNoSign = false;
+        bool altForm = false;
+        bool plusSign = false;
+        bool emode = false;
+        int expo = 0;
+        char specifier = '\0';
+
+        if (format[i] == '%') {
             ++i;
 
             if (!format[i]) {
@@ -216,21 +209,15 @@ char* vformat(const char* format, va_list args) {
                 precSpec = 6;
             }
 
-            if (!format[i]) break;
-
             if (format[i] == 'h' || format[i] == 'l' || format[i] == 'j' ||
                 format[i] == 'z' || format[i] == 't' || format[i] == 'L') {
                 length = format[i];
                 ++i;
-                if (!format[i]) break;
                 if (format[i] == 'h') {
                     length = 'H';
-                    ++i;
-                    if (!format[i]) break;
                 } else if (format[i] == 'l') {
                     length = 'q';
                     ++i;
-                    if (!format[i]) break;
                 }
             }
             specifier = format[i];
@@ -292,7 +279,7 @@ char* vformat(const char* format, va_list args) {
                             break;
                         }
                         case 'h': {
-                            auto integer = static_cast<unsigned short int>(va_arg(args, unsigned int));
+                            const auto integer = static_cast<unsigned short int>(va_arg(args, unsigned int));
                             int_str(
                                 integer,
                                 intStrBuffer,
@@ -307,7 +294,7 @@ char* vformat(const char* format, va_list args) {
                             break;
                         }
                         case 'l': {
-                            unsigned long integer = va_arg(args, unsigned long);
+                            const uint64_t integer = va_arg(args, uint64_t);
                             int_str(
                                 integer,
                                 intStrBuffer,
@@ -322,9 +309,9 @@ char* vformat(const char* format, va_list args) {
                             break;
                         }
                         case 'q': {
-                            unsigned long long integer = va_arg(args, unsigned long long);
+                            uintmax_t integer = va_arg(args, unsigned long long);
                             int_str(
-                                integer,
+                                static_cast<intmax_t>(integer),
                                 intStrBuffer,
                                 base,
                                 plusSign,
@@ -570,57 +557,6 @@ char* vformat(const char* format, va_list args) {
                 case 'e':
                 case 'E':
                     emode = true;
-
-                case 'f':
-                case 'F':
-                case 'g':
-                case 'G': {
-                    double floating = va_arg(args, double);
-
-                    while (emode && floating >= 10) {
-                        floating /= 10;
-                        ++expo;
-                    }
-
-                    int form = lengthSpec - precSpec - expo - (precSpec || altForm ? 1 : 0);
-                    if (emode) {
-                        form -= 4; // 'e+00'
-                    }
-                    if (form < 0) {
-                        form = 0;
-                    }
-
-                    int_str(
-                        floating,
-                        intStrBuffer,
-                        base,
-                        plusSign,
-                        spaceNoSign,
-                        form,
-                        leftJustify,
-                        zeroPad
-                    );
-
-                    appendString(intStrBuffer, outputBuffer, &pos);
-
-                    floating -= static_cast<int>(floating);
-
-                    for (int j = 0; j < precSpec; ++j) {
-                        floating *= 10;
-                    }
-                    const auto decPlaces = static_cast<intmax_t>(floating + 0.5);
-
-                    if (precSpec) {
-                        appendCharacter('.', outputBuffer, &pos);
-                        int_str(decPlaces, intStrBuffer, 10, false, false, 0, false, false);
-                        intStrBuffer[precSpec] = 0;
-                        appendString(intStrBuffer, outputBuffer, &pos);
-                    } else if (altForm) {
-                        appendCharacter('.', outputBuffer, &pos);
-                    }
-
-                    break;
-                }
 
                 case 'a':
                 case 'A':

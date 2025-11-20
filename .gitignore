@@ -1,5 +1,6 @@
 .idea/
 .run/
+.gdbinit
 build/
 cmake-build-debug/
 iso/

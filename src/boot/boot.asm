@@ -26,18 +26,16 @@ multiboot_header_end:
 
 section .bss
 align 4096
-p4_table:
+PML4:
     resb 4096
-p3_table:
+PDP:
     resb 4096
-p2_table:
+PD:
     resb 4096
-p1_table_0:
-    resb 4096
-p1_table_1:
+PT:
     resb 4096
 stack_bottom:
-    resb 16384
+    resb 4096
 stack_top:
 
 section .rodata
@@ -50,53 +48,65 @@ gdt64:
     dq gdt64
 
 section .text
-extern long_mode_start
+extern start64
+extern kernel_entry32
 global start
 start:
 	mov esp, stack_top  ; setup stack pointer
 	mov edi, eax    ; put multiboot info on stack
 	mov esi, ebx    ; put multiboot magic number on stack
 
-    call set_up_page_tables
-    call enable_paging
+    push edi
+    push esi
+    call kernel_entry32
 
     lgdt [gdt64.pointer]
-
-    jmp 0x08:long_mode_start
+    jmp 0x08:start64
 
 ; https://os.phil-opp.com/entering-longmode/
+global set_up_page_tables
 set_up_page_tables:
-    ; map first P4 entry to P3 table
-    mov eax, p3_table
+    ; map first PML4 entry to PDP table
+    mov eax, PDP
     or eax, 0x3 ; present + writable
-    mov [p4_table], eax
+    mov [PML4], eax
 
-    mov esi, p2_table
+    xor ecx, ecx
+.map_pdp_table:
+    ; Map first PDP entry to PD table
+    mov eax, PD
+    or eax, 0x3 ; Present + writable
+    mov [PDP + ecx * 8], eax
+    inc ecx            ; Increase counter
+    cmp ecx, 512       ; If counter == 512, the whole PDP table is mapped
+    jne .map_pdp_table  ; Else map the next entry
 
-.map_p3_entries:
-    mov eax, esi
-    or eax, 0x3 ; present + writable
-    mov [p3_table + ecx * 8], eax
-    add esi, 4096
+    xor ecx, ecx       ; Counter variable = 0
+.map_pd_table:
+    ; Map first PD entry to PT table
+    mov eax, PT
+    or eax, 0x3 ; Present + writable
+    mov [PD + ecx * 8], eax
+    inc ecx            ; Increase counter
+    cmp ecx, 512       ; If counter == 512, the whole PD table is mapped
+    jne .map_pd_table  ; Else map the next entry
 
-    mov ecx, 0         ; counter variable
-
-.map_p2_table:
-    ; map ecx-th P2 entry to a huge page that starts at address 2MiB*ecx
-    mov eax, 0x200000  ; 2MiB
-    mul ecx            ; start address of ecx-th page
-    or eax, 0b10000011 ; present + writable + huge
-    mov [p2_table + ecx * 8], eax ; map ecx-th entry
-
-    inc ecx            ; increase counter
-    cmp ecx, 512       ; if counter == 512, the whole P2 table is mapped
-    jne .map_p2_table  ; else map the next entry
-
+    xor ecx, ecx       ; Counter variable = 0
+.map_pt_table:
+    ; Map ecx-th PT entry to a 4 KiB page that starts at address 4 KiB * ecx
+    mov eax, 0x1000  ; 4 KiB
+    mul ecx          ; Start address of ecx-th page
+    or eax, 0x3      ; Present + writable
+    mov [PT + ecx * 8], eax ; Map ecx-th entry
+    inc ecx          ; Increase counter
+    cmp ecx, 512     ; If counter == 512, the whole PT table is mapped
+    jne .map_pt_table ; Else map the next entry
     ret
 
-enable_paging:
-    ; load P4 to cr3 register (cpu uses this to access the P4 table)
-    mov eax, p4_table
+global start_long_mode
+start_long_mode:
+    ; load PML4 to cr3 register (cpu uses this to access the PML4 table)
+    mov eax, PML4
     mov cr3, eax
 
     ; enable PAE-flag in cr4 (Physical Address Extension)

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <kernel/multiboot.h>
 
-extern uint8_t* fb_addr;
+extern uint64_t* fb_addr;
 extern uint32_t fb_width;
 extern uint32_t fb_height;
 extern uint32_t fb_pitch;
