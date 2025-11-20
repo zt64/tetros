@@ -4,6 +4,7 @@
 #include "driver/keyboard.hpp"
 #include "driver/screen.hpp"
 #include "driver/serial.hpp"
+#include "driver/sound.hpp"
 #include "driver/timer.hpp"
 #include "kernel/gdt.hpp"
 #include "kernel/idt.hpp"
@@ -45,7 +46,6 @@ static void parse_multiboot_info(const uint64_t multiboot_info_ptr) {
             }
 
             case MULTIBOOT_TAG_TYPE_ELF_SECTIONS:
-                serial::printf("elf sections\n");
                 // ELF sections parsing not yet implemented
                 break;
 
@@ -81,7 +81,6 @@ extern "C" [[noreturn]] void kernel_entry64(const uint64_t multiboot_magic, cons
     }
 
     serial::printf("Initializing kernel...\n");
-    serial::printf("Multiboot header size: %d\n", reinterpret_cast<multiboot_header*>(multiboot_info_ptr)->header_length);
 
     parse_multiboot_info(multiboot_info_ptr);
 
@@ -106,12 +105,6 @@ extern "C" [[noreturn]] void kernel_entry64(const uint64_t multiboot_magic, cons
     srand(get_time());
 
     kb_register_listener(Tetris::handle_key);
-
-    // Testing paging read/write
-    auto* location = reinterpret_cast<uint32_t *>(fb_addr + fb_pitch * 320 + 240 * 4);
-    *location = 0x1ed760;
-    serial::printf("%p\n", location);
-    serial::printf("%x\n", *location);
 
     for (;;) {
         kb_process_queue();

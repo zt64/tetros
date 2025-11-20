@@ -20,8 +20,11 @@ cd "$(dirname "$0")/.."
 BUILD_DIR="${BUILD_DIR:-build}"
 
 mkdir -p "$BUILD_DIR"
-cmake -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug
-make -C "$BUILD_DIR"
+cd "$BUILD_DIR"
+
+cmake ..
+make
+cd ..
 
 if [ "$debug" -eq 1 ]; then
     QEMU_ARGS="-d int,cpu_reset $QEMU_ARGS"
@@ -32,8 +35,11 @@ if [ "$gdb" -eq 1 ]; then
 fi
 
 exec qemu-system-x86_64 \
+    -drive if=pflash,format=raw,unit=0,file=./OVMF_CODE.fd \
     -cdrom "$BUILD_DIR/tetros.iso" \
+    -net none \
     -serial stdio \
+    -m 4G \
     -audiodev pa,id=speaker \
     -machine pcspk-audiodev=speaker \
     -no-reboot \

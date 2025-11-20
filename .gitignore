@@ -1,6 +1,6 @@
 .idea/
 .run/
 .gdbinit
+OVMF_CODE.fd
 build/
 cmake-build-debug/
-iso/

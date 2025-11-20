@@ -31,9 +31,9 @@ PML4:
 PDP:
     resb 4096
 PD:
-    resb 4096
+    resb 4096 * 4 ; 4 pd tables
 PT:
-    resb 4096
+    resb 4096 * 2048 ; 4 * 512 = 2048 pt tables
 stack_bottom:
     resb 4096
 stack_top:
@@ -71,36 +71,43 @@ set_up_page_tables:
     or eax, 0x3 ; present + writable
     mov [PML4], eax
 
+    ; map first 4 PDP entries to 4 PD tables
     xor ecx, ecx
 .map_pdp_table:
-    ; Map first PDP entry to PD table
     mov eax, PD
-    or eax, 0x3 ; Present + writable
+    mov edx, ecx
+    shl edx, 12        ; ecx * 4096 (size of each PD table)
+    add eax, edx
+    or eax, 0x3        ; present + writable
     mov [PDP + ecx * 8], eax
-    inc ecx            ; Increase counter
-    cmp ecx, 512       ; If counter == 512, the whole PDP table is mapped
-    jne .map_pdp_table  ; Else map the next entry
+    inc ecx
+    cmp ecx, 4         ; map 4 PDP entries
+    jne .map_pdp_table
 
-    xor ecx, ecx       ; Counter variable = 0
+    ; map all 512 entries in each of the 4 PD tables
+    xor ecx, ecx       ; total counter for all PD entries (0-2047)
 .map_pd_table:
-    ; Map first PD entry to PT table
     mov eax, PT
-    or eax, 0x3 ; Present + writable
+    mov edx, ecx
+    shl edx, 12        ; ecx * 4096 (size of each PT table)
+    add eax, edx
+    or eax, 0x3        ; present + writable
     mov [PD + ecx * 8], eax
-    inc ecx            ; Increase counter
-    cmp ecx, 512       ; If counter == 512, the whole PD table is mapped
-    jne .map_pd_table  ; Else map the next entry
+    inc ecx
+    cmp ecx, 2048      ; 512 * 4 = 2048 total PD entries
+    jne .map_pd_table
 
-    xor ecx, ecx       ; Counter variable = 0
+    ; map all 512 entries in each of the 2048 PT tables
+    xor ecx, ecx       ; total counter for all PT entries (0-1048575)
 .map_pt_table:
-    ; Map ecx-th PT entry to a 4 KiB page that starts at address 4 KiB * ecx
-    mov eax, 0x1000  ; 4 KiB
-    mul ecx          ; Start address of ecx-th page
-    or eax, 0x3      ; Present + writable
-    mov [PT + ecx * 8], eax ; Map ecx-th entry
-    inc ecx          ; Increase counter
-    cmp ecx, 512     ; If counter == 512, the whole PT table is mapped
-    jne .map_pt_table ; Else map the next entry
+    mov eax, ecx
+    shl eax, 12        ; ecx * 4096 (physical address)
+    or eax, 0x13        ; present + writable
+    mov [PT + ecx * 8], eax
+    inc ecx
+    cmp ecx, 1048576   ; 512 * 2048 = 1048576 total pages (4GB)
+    jne .map_pt_table
+
     ret
 
 global start_long_mode

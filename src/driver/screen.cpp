@@ -23,7 +23,7 @@ void fb_init(const multiboot_tag_framebuffer *fb_tag) {
     fb_height = fb_tag->common.framebuffer_height;
     fb_pitch = fb_tag->common.framebuffer_pitch;
     fb_bpp = fb_tag->common.framebuffer_bpp;
-    serial::printf("Framebuffer: addr: 0x%p %ux%u, %u bpp\n", fb_addr, fb_width, fb_height, fb_bpp);
+    serial::printf("fb_addr = 0x%p, fb_width = %u, fb_height = %u, fb_bpp = %u\n", fb_addr, fb_width, fb_height, fb_bpp);
 }
 
 namespace screen {
@@ -139,6 +139,6 @@ namespace screen {
     }
 
     void flush() {
-        memcpy(fb_addr, vga_buffer, VGA_BUFFER_BYTES);
+        memcpy_fast(fb_addr, vga_buffer, VGA_BUFFER_BYTES);
     }
 }

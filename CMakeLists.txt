@@ -18,7 +18,7 @@ add_executable(${KERNEL_TARGET} ${SOURCES_ASM} ${SOURCES_CXX})
 
 target_compile_options(${KERNEL_TARGET} PRIVATE
         -ffreestanding -fno-exceptions -fno-rtti
-        -Wall -Wextra -mno-mmx -mno-avx -mno-avx512f -mno-sse2
+        -Wall -Wextra -mno-mmx -mno-avx -mno-avx512f -mno-sse2 -g
 )
 
 target_include_directories(${KERNEL_TARGET} PRIVATE include)
