@@ -7,14 +7,14 @@
 #include "driver/serial.hpp"
 
 // read from b
-unsigned char inb(uint16_t _port) {
-    unsigned char rv;
-    asm volatile("inb %1, %0" : "=a" (rv) : "dN" (_port));
+uint8_t inb(uint16_t port) {
+    uint8_t rv;
+    asm volatile("inb %1, %0" : "=a" (rv) : "dN" (port));
     return rv;
 }
 
-void outb(uint16_t _port, unsigned char _data) {
-    asm volatile("outb %1, %0" : : "dN" (_port), "a" (_data));
+void outb(uint16_t port, uint8_t data) {
+    asm volatile("outb %1, %0" : : "dN" (port), "a" (data));
 }
 
 void panic(const char* msg, ...) {
@@ -23,11 +23,9 @@ void panic(const char* msg, ...) {
     const char* formatted = vformat(msg, ap);
     va_end(ap);
     screen::clear();
-    screen::draw(formatted, 0, 0);
+    screen::draw(formatted, 0, 0, 1.5);
     screen::flush();
     serial::print(formatted);
 
-    for (;;) {
-        asm volatile("hlt");
-    }
+    for (;;) asm volatile("hlt");
 }

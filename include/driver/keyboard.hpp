@@ -9,8 +9,18 @@ enum Key {
     KEY_ARROW_DOWN = 0x50,
     KEY_ARROW_LEFT = 0x4b,
     KEY_ARROW_RIGHT = 0x4d,
+    KEY_SHIFT_LEFT = 0x2A,
+    KEY_SHIFT_RIGHT = 0x36,
+    KEY_CONTROL = 0x1D,
+    KEY_A = 0x1E,
+    KEY_C = 0x2E,
+    KEY_D = 0x20,
     KEY_R = 0x13,
-    KEY_P = 0x19
+    KEY_P = 0x19,
+    KEY_S = 0x1F,
+    KEY_W = 0x11,
+    KEY_X = 0x2D,
+    KEY_Z = 0x2C,
 };
 
 using key_listener_t = void(*)(uint8_t scancode);

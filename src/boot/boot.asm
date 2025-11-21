@@ -13,8 +13,8 @@ multiboot_header_start:
     dw 5       ; type
     dw 0       ; flags
     dd 20      ; size
-    dd 640     ; width
-    dd 480     ; height
+    dd 1024     ; width
+    dd 768     ; height
     dd 32      ; depth
 
     ; End tag

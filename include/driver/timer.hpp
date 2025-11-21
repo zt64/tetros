@@ -4,7 +4,7 @@
 
 #define PIT_FREQUENCY 1193182
 
-inline volatile int timer_ticks = 0;
+inline volatile uint64_t timer_ticks = 0;
 
 void timer_init();
 

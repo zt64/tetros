@@ -35,7 +35,7 @@ if [ "$gdb" -eq 1 ]; then
 fi
 
 exec qemu-system-x86_64 \
-    -drive if=pflash,format=raw,unit=0,file=./OVMF_CODE.fd \
+    -drive if=pflash,format=raw,file=./OVMF_CODE.fd \
     -cdrom "$BUILD_DIR/tetros.iso" \
     -net none \
     -serial stdio \
