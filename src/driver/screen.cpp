@@ -151,7 +151,7 @@ namespace screen {
     }
 
     void put_pixel(const uint32_t x, const uint32_t y, const uint32_t color) {
-        auto* location = reinterpret_cast<uint32_t *>(vga_buffer + framebuffer.pitch * y + x * 4);
+        auto* location = reinterpret_cast<uint32_t *>(vga_buffer + framebuffer.pitch * y + x * (framebuffer.bpp / 8));
         *location = color;
     }
 
