@@ -1,10 +1,9 @@
 #pragma once
 
-#include <cstdint>
-#include <kernel/multiboot.h>
+#include "limine/limine.h"
 
 struct Framebuffer {
-    uint64_t* addr;
+    void* addr;
     uint32_t width;
     uint32_t height;
     uint32_t pitch;
@@ -14,7 +13,7 @@ struct Framebuffer {
 
 inline Framebuffer framebuffer;
 
-void fb_init(const multiboot_tag_framebuffer* fb_tag);
+void fb_init(const limine_framebuffer *fb);
 
 namespace screen {
     void draw_char(unsigned char c, uint32_t x, uint32_t y, float size, uint32_t fgcolor, uint32_t bgcolor);

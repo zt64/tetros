@@ -6,8 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_ASM_NASM_COMPILER nasm)
 set(CMAKE_ASM_NASM_OBJECT_FORMAT elf64)
-set(CMAKE_ASM_NASM_COMPILE_OBJECT
-        "<CMAKE_ASM_NASM_COMPILER> <INCLUDES> -f ${CMAKE_ASM_NASM_OBJECT_FORMAT} -o <OBJECT> <SOURCE>")
+set(CMAKE_ASM_NASM_COMPILE_OBJECT "<CMAKE_ASM_NASM_COMPILER> <INCLUDES> -f ${CMAKE_ASM_NASM_OBJECT_FORMAT} -o <OBJECT> <SOURCE>")
 
 file(GLOB_RECURSE SOURCES_ASM src/*.asm)
 file(GLOB_RECURSE SOURCES_CXX src/*.cpp src/*.c)
@@ -17,43 +16,44 @@ set(KERNEL_TARGET tetros)
 add_executable(${KERNEL_TARGET} ${SOURCES_ASM} ${SOURCES_CXX})
 
 target_compile_options(${KERNEL_TARGET} PRIVATE
-        -ffreestanding -fno-exceptions -fno-rtti
-        -Wall -Wextra -mno-mmx -mno-avx -mno-avx512f -mno-sse2 -g
+        -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -mno-red-zone
+        -mno-mmx -mno-avx -mno-avx512f -mno-sse -mno-sse2 -g -Wall -Wextra
 )
 
 target_include_directories(${KERNEL_TARGET} PRIVATE include)
 target_link_libraries(${KERNEL_TARGET} PRIVATE gcc)
-target_link_options(${KERNEL_TARGET} PRIVATE
-        -T ${CMAKE_SOURCE_DIR}/linker.ld -nostdlib -static
-)
+target_link_options(${KERNEL_TARGET} PRIVATE -T ${CMAKE_SOURCE_DIR}/linker.ld -nostdlib -static)
 
-find_program(GRUB_MKRESCUE NAMES grub-mkrescue grub2-mkrescue)
-if (NOT GRUB_MKRESCUE)
-    message(WARNING "grub-mkrescue not found")
-    return()
+find_program(XORRISO NAMES xorriso)
+if (NOT XORRISO)
+    message(FATAL_ERROR "xorriso not found")
 endif ()
 
 set(ISO_DIR ${CMAKE_BINARY_DIR}/iso)
 set(ISO_OUTPUT ${CMAKE_BINARY_DIR}/tetros.iso)
-set(GRUB_CFG ${ISO_DIR}/boot/grub/grub.cfg)
-
-file(WRITE ${CMAKE_BINARY_DIR}/grub.cfg.in
-        "insmod all_video
-set timeout=1
-set default=0
-
-menuentry \"kernel\" {
-  multiboot2 /boot/tetros.bin
-  boot
-}
-")
+set(LIMINE_SRC_DIR ${CMAKE_SOURCE_DIR}/limine)
+set(LIMINE_DIR ${ISO_DIR}/boot/limine)
 
 add_custom_command(TARGET ${KERNEL_TARGET} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${ISO_DIR}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${ISO_DIR}/boot/grub
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${KERNEL_TARGET}> ${ISO_DIR}/boot/tetros.bin
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/grub.cfg.in ${GRUB_CFG}
-        COMMAND ${GRUB_MKRESCUE} -o ${ISO_OUTPUT} ${ISO_DIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${LIMINE_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${KERNEL_TARGET}> ${ISO_DIR}/boot/tetros
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/limine.conf ${LIMINE_SRC_DIR}/limine-bios.sys
+        ${LIMINE_SRC_DIR}/limine-bios-cd.bin ${LIMINE_SRC_DIR}/limine-uefi-cd.bin ${LIMINE_DIR}
+
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${ISO_DIR}/EFI/BOOT
+        COMMAND ${CMAKE_COMMAND} -E copy ${LIMINE_SRC_DIR}/BOOTX64.EFI ${ISO_DIR}/EFI/BOOT
+        COMMAND ${CMAKE_COMMAND} -E copy ${LIMINE_SRC_DIR}/BOOTIA32.EFI ${ISO_DIR}/EFI/BOOT
+
+        COMMAND ${XORRISO}
+        ARGS -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin
+        -no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus
+        -apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin
+        -efi-boot-part --efi-boot-image --protective-msdos-label
+        ${ISO_DIR} -o ${ISO_OUTPUT}
+
+        COMMAND ${LIMINE_SRC_DIR}/limine
+        ARGS bios-install ${ISO_OUTPUT}
         COMMENT "Creating bootable ISO"
         VERBATIM
 )

@@ -315,7 +315,6 @@ void Tetris::draw() {
     const auto start_x = center_x - game_width_scaled / 2;
     const auto start_y = center_y - game_height_scaled / 2;
     const auto text_start_x = start_x + game_width_scaled + border + static_cast<uint16_t>(20 * ui_scale);
-
     auto text_y = start_y;
     auto draw_text_line = [&](const char* text) {
         screen::draw(text, text_start_x, text_y, 1.4);

@@ -4,85 +4,30 @@
 #include "driver/keyboard.hpp"
 #include "driver/screen.hpp"
 #include "driver/serial.hpp"
-#include "driver/sound.hpp"
 #include "driver/timer.hpp"
+#include "driver/limine/limine_requests.hpp"
 #include "kernel/gdt.hpp"
 #include "kernel/idt.hpp"
 #include "kernel/irq.hpp"
-#include "kernel/multiboot.h"
 #include "lib/rand.hpp"
 #include "tetris/tetris.hpp"
 
-static void parse_multiboot_info(const uint64_t multiboot_info_ptr) {
-    auto* tag_start = reinterpret_cast<multiboot_tag *>(multiboot_info_ptr + 8);
-
-    for (auto* tag = tag_start; tag->type != MULTIBOOT_TAG_TYPE_END;
-         tag = reinterpret_cast<multiboot_tag *>(reinterpret_cast<uint8_t *>(tag) + ((tag->size + 7) & ~7))) {
-        switch (tag->type) {
-            case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO: {
-                const auto* meminfo = reinterpret_cast<multiboot_tag_basic_meminfo *>(tag);
-                serial::printf("mem_lower = %uKB, mem_upper = %uKB\n", meminfo->mem_lower, meminfo->mem_upper);
-                break;
-            }
-
-            case MULTIBOOT_TAG_TYPE_MMAP: {
-                serial::printf("mmap\n");
-                auto* mmap_tag = reinterpret_cast<multiboot_tag_mmap *>(tag);
-                const auto* tag_end = reinterpret_cast<multiboot_uint8_t *>(tag) + tag->size;
-
-                for (auto* mmap = mmap_tag->entries;
-                     reinterpret_cast<multiboot_uint8_t *>(mmap) < tag_end;
-                     mmap = reinterpret_cast<multiboot_memory_map_t *>(
-                         reinterpret_cast<multiboot_uint8_t *>(mmap) + mmap_tag->entry_size)) {
-                    serial::printf(
-                        " base_addr = 0x%016llX, length = 0x%016llX, type = 0x%X\n",
-                        mmap->addr,
-                        mmap->len,
-                        mmap->type
-                    );
-
-                }
-                break;
-            }
-
-            case MULTIBOOT_TAG_TYPE_ELF_SECTIONS:
-                // ELF sections parsing not yet implemented
-                break;
-
-            case MULTIBOOT_TAG_TYPE_FRAMEBUFFER: {
-                const auto* fb_tag = reinterpret_cast<multiboot_tag_framebuffer *>(tag);
-                fb_init(fb_tag);
-                break;
-            }
-
-            default:
-                break;
-        }
-    }
-}
-
-extern "C" void start_long_mode();
-
-extern "C" void kernel_entry32(const uint64_t multiboot_magic, const uint64_t multiboot_info_ptr) {
-    paging::init();
-    start_long_mode();
-}
-
-extern "C" [[noreturn]] void kernel_entry64(const uint64_t multiboot_magic, const uint64_t multiboot_info_ptr) {
+extern "C" [[noreturn]] void kmain() {
     serial::init();
 
-    // Check to ensure booted by a multiboot2 compliant bootloader
-    if (multiboot_magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
-        panic("multiboot magic number is incorrect");
+    if (!LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision)) {
+        panic("Unsupported base revision");
     }
 
-    if (multiboot_info_ptr & 7) {
-        panic("Unaligned mbi: 0x%x\n", multiboot_info_ptr);
+    if (framebuffer_request.response == nullptr || framebuffer_request.response->framebuffer_count < 1) {
+        panic("No framebuffer provided");
     }
+
+    const limine_framebuffer* limine_framebuffer = framebuffer_request.response->framebuffers[0];
+
+    fb_init(limine_framebuffer);
 
     serial::printf("Initializing kernel...\n");
-
-    parse_multiboot_info(multiboot_info_ptr);
 
     gdt_init();
     serial::printf("GDT initialized\n");
@@ -93,7 +38,9 @@ extern "C" [[noreturn]] void kernel_entry64(const uint64_t multiboot_magic, cons
     irq_init();
     serial::printf("IRQ initialized\n");
 
-    timer_init();
+    // paging::init();
+
+    timer_init(100); // 100 times per second
     serial::printf("Timer initialized\n");
 
     kb_init();

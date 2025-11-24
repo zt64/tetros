@@ -4,32 +4,19 @@
 #include <cstdint>
 #include <driver/serial.hpp>
 
-union alignas(16) Mino {
-    struct {
-        size_t size; // Size of the block
-        unsigned is_free; // Block status flag
-        union Mino* next; // Next block in list
-    } s;
+#include "driver/limine/limine_requests.hpp"
 
-    intptr_t* data[1];
-};
-
-static Mino* heapStart = nullptr;
-static auto top = heapStart;
-
-inline size_t align(const size_t n) {
-    return (n + sizeof(intptr_t) - 1) & ~(sizeof(intptr_t) - 1);
-}
+static inline uint64_t hhdm_offset = hhdm_request.response->offset;
 
 void* memcpy(void* dst_ptr, const void* src_ptr, const size_t size) {
-    const auto dst = static_cast<unsigned char *>(dst_ptr);
-    const auto src = static_cast<const unsigned char *>(src_ptr);
+    const auto dst = hhdm_offset + static_cast<uint8_t*>(dst_ptr);
+    const auto src = static_cast<const uint8_t*>(src_ptr);
     for (size_t i = 0; i < size; i++) dst[i] = src[i];
     return dst_ptr;
 }
 
 void* memset(void* dst_ptr, const uint8_t val, const size_t count) {
-    auto* p = static_cast<uint8_t *>(dst_ptr);
+    auto* p = hhdm_offset + static_cast<uint8_t *>(dst_ptr);
     for (size_t i = 0; i < count; i++) {
         p[i] = static_cast<uint8_t>(val);
     }

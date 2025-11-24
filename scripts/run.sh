@@ -35,12 +35,12 @@ if [ "$gdb" -eq 1 ]; then
 fi
 
 exec qemu-system-x86_64 \
-    -drive if=pflash,format=raw,file=./OVMF_CODE.fd \
     -cdrom "$BUILD_DIR/tetros.iso" \
     -net none \
-    -serial stdio \
+    -serial mon:stdio \
     -m 4G \
     -audiodev pa,id=speaker \
     -machine pcspk-audiodev=speaker \
     -no-reboot \
+    -no-shutdown \
     $QEMU_ARGS

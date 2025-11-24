@@ -2,7 +2,7 @@
 
 #include "driver/screen.hpp"
 #include "driver/serial.hpp"
-#include "kernel/multiboot.h"
+#include "driver/limine/limine.h"
 #include "kernel/system.hpp"
 #include "lib/font8x8.hpp"
 #include "lib/mem.hpp"
@@ -14,12 +14,12 @@
 static uint8_t framebuffer_data[(MAX_FB_WIDTH * MAX_FB_HEIGHT * MAX_FB_BPP) / 8];
 static uint8_t* vga_buffer = nullptr;
 
-void fb_init(const multiboot_tag_framebuffer* fb_tag) {
-    framebuffer.addr = reinterpret_cast<uint64_t *>(fb_tag->common.framebuffer_addr);
-    framebuffer.width = fb_tag->common.framebuffer_width;
-    framebuffer.height = fb_tag->common.framebuffer_height;
-    framebuffer.pitch = fb_tag->common.framebuffer_pitch;
-    framebuffer.bpp = fb_tag->common.framebuffer_bpp;
+void fb_init(const limine_framebuffer *fb) {
+    framebuffer.width = fb->width;
+    framebuffer.height = fb->height;
+    framebuffer.pitch = fb->pitch;
+    framebuffer.bpp = fb->bpp;
+    framebuffer.addr = fb->address;
     framebuffer.size = (framebuffer.width * framebuffer.height * framebuffer.bpp) / 8;
 
     if (framebuffer.size > sizeof(framebuffer_data)) {

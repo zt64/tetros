@@ -6,7 +6,7 @@
 
 inline volatile uint64_t timer_ticks = 0;
 
-void timer_init();
+void timer_init(uint32_t frequency);
 
 void set_pit(uint32_t frequency);
 

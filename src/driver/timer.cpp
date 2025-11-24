@@ -10,9 +10,9 @@ void timer_handler(regs* r) {
     snd_tick();
 }
 
-void timer_init() {
+void timer_init(const uint32_t frequency) {
     irq_install_handler(0, timer_handler);
-    set_pit(100); // 100 hz
+    set_pit(frequency); // 100 hz
 }
 
 void set_pit(const uint32_t frequency) {

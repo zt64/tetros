@@ -1,23 +1,5 @@
 BITS 64
 
-global start64
-extern kernel_entry64
-start64:
-    ; load data segment selector into all data segment registers
-    mov ax, 0x10      ; GDT data segment
-    mov ss, ax
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-
-	call kernel_entry64
-
-	cli
-.hang:
-	hlt
-	jmp .hang
-
 global gdt_flush
 extern gp
 gdt_flush:
