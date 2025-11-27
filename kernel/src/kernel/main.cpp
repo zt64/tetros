@@ -1,10 +1,12 @@
 #include "driver/cmos.hpp"
 #include "driver/pci.hpp"
-#include "driver/ps2.hpp"
+#include "driver/ps2/keyboard.hpp"
 #include "driver/screen.hpp"
 #include "driver/serial.hpp"
+#include "driver/sound.hpp"
 #include "driver/timer.hpp"
 #include "driver/limine/limine_requests.hpp"
+#include "driver/ps2/ps2.hpp"
 #include "kernel/gdt.hpp"
 #include "kernel/idt.hpp"
 #include "kernel/irq.hpp"
@@ -46,6 +48,8 @@ extern "C" [[noreturn]] void kmain() {
 
     timer::init(100); // 100 times per second
     logger.info("PIC Timer initialized");
+
+    ps2::init();
 
     kb_init();
     logger.info("PS/2 Keyboard initialized");

@@ -1,15 +1,17 @@
-#include "driver/ps2.hpp"
-#include "driver/screen.hpp"
+#include "driver/ps2/keyboard.hpp"
 #include "kernel/irq.hpp"
 #include "kernel/system.hpp"
+#include "driver/sound.hpp"
+
 #include <cstddef>
 
-#include "driver/sound.hpp"
-#include "driver/timer.hpp"
+#include "driver/ps2/ps2.hpp"
+
+#define KB_BUFFER_SIZE  64
 
 static key_listener_t g_listener = nullptr;
 
-static volatile uint8_t kb_buf[64];
+static volatile uint8_t kb_buf[KB_BUFFER_SIZE];
 static volatile uint8_t kb_buf_head = 0;
 static volatile uint8_t kb_buf_tail = 0;
 
@@ -33,15 +35,37 @@ void kb_register_listener(const key_listener_t listener) {
 
 void kb_unregister_listener() { g_listener = nullptr; }
 
+bool break_key = false;
+bool ext_key = false;
+
 void kb_process_queue() {
     uint8_t sc;
     while (kb_dequeue(&sc)) {
-        if (g_listener) g_listener(sc);
+        if (sc == 0xE0) {
+            ext_key = true;
+            continue;
+        }
+
+        if (sc == 0xF0) {
+            break_key = true;
+            continue;
+        }
+
+        const KeyEvent ev = {
+            .scancode = sc,
+            .break_key = break_key,
+            .extended_key = ext_key
+        };
+
+        break_key = false;
+        ext_key = false;
+
+        if (g_listener) g_listener(ev);
     }
 }
 
 void kb_handler([[maybe_unused]] regs* r) {
-    const unsigned char scancode = inb(0x60);
+    const unsigned char scancode = inb(PS2_DATA_PORT);
 
     kb_enqueue(scancode);
 }

@@ -1,13 +1,11 @@
 #include "tetris/tetris.hpp"
 
-#include "driver/ps2.hpp"
+#include "driver/ps2/keyboard.hpp"
 #include "driver/screen.hpp"
 #include "driver/serial.hpp"
-#include "../../include/memory/mem.hpp"
-#include "driver/sound.hpp"
+#include "memory/mem.hpp"
 #include "lib/rand.hpp"
 #include "lib/format.hpp"
-#include "lib/string.hpp"
 
 constexpr PieceDef PIECE_O_DEF = {
     {
@@ -265,9 +263,9 @@ void Tetris::update() {
     frame_counter++;
 }
 
-void Tetris::handle_key(const uint8_t sc) {
-    if (sc & 0x80) return; // 0x80 = key release
-    switch (sc) {
+void Tetris::handle_key(const KeyEvent ev) {
+    if (ev.break_key) return;
+    switch (ev.scancode) {
         case KEY_X:
         case KEY_W:
         case KEY_ARROW_UP:

@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "driver/ps2/keyboard.hpp"
+
 enum PieceType {
     PIECE_O,
     PIECE_I,
@@ -39,7 +41,7 @@ struct Tetromino {
 class Tetris {
 public:
     static void update();
-    static void handle_key(uint8_t sc);
+    static void handle_key(KeyEvent ev);
 
 private:
     static constexpr uint16_t board_height = 20;

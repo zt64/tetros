@@ -1,7 +1,7 @@
 #include "kernel/idt.hpp"
 #include "driver/screen.hpp"
 #include "kernel/isrs.hpp"
-#include "../../../include/memory/mem.hpp"
+#include "memory/mem.hpp"
 
 __attribute__((aligned(0x10)))
 idt_entry_t idt[256];
