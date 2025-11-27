@@ -8,21 +8,30 @@ set(CMAKE_ASM_NASM_COMPILER nasm)
 set(CMAKE_ASM_NASM_OBJECT_FORMAT elf64)
 set(CMAKE_ASM_NASM_COMPILE_OBJECT "<CMAKE_ASM_NASM_COMPILER> <INCLUDES> -f ${CMAKE_ASM_NASM_OBJECT_FORMAT} -o <OBJECT> <SOURCE>")
 
-file(GLOB_RECURSE SOURCES_ASM src/*.asm)
-file(GLOB_RECURSE SOURCES_CXX src/*.cpp src/*.c)
+file(GLOB_RECURSE SOURCES_ASM kernel/src/*.asm)
+file(GLOB_RECURSE SOURCES_CXX kernel/src/*.cpp kernel/src/*.c)
 set_source_files_properties(${SOURCES_ASM} PROPERTIES LANGUAGE ASM_NASM)
 
 set(KERNEL_TARGET tetros)
 add_executable(${KERNEL_TARGET} ${SOURCES_ASM} ${SOURCES_CXX})
 
+# Use kernel code model and disable PIE/PIC so the compiler/linker generate
+# full 64-bit relocations for kernel symbols
 target_compile_options(${KERNEL_TARGET} PRIVATE
-        -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -mno-red-zone
-        -mno-mmx -mno-avx -mno-avx512f -mno-sse -mno-sse2 -g -Wall -Wextra
+        -ffreestanding -fno-stack-protector -mno-red-zone
+        -mno-mmx -mno-avx -mno-avx512f -mno-sse -mno-sse2
+        -g -Wall -Wextra -mcmodel=kernel -fno-pic -fno-pie
 )
 
-target_include_directories(${KERNEL_TARGET} PRIVATE include)
+# C++-only flags
+target_compile_options(${KERNEL_TARGET} PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+        $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+)
+
+target_include_directories(${KERNEL_TARGET} PRIVATE kernel/include)
 target_link_libraries(${KERNEL_TARGET} PRIVATE gcc)
-target_link_options(${KERNEL_TARGET} PRIVATE -T ${CMAKE_SOURCE_DIR}/linker.ld -nostdlib -static)
+target_link_options(${KERNEL_TARGET} PRIVATE -T ${CMAKE_SOURCE_DIR}/linker.ld -nostdlib -static -no-pie -mcmodel=kernel)
 
 find_program(XORRISO NAMES xorriso)
 if (NOT XORRISO)
