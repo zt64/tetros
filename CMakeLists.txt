@@ -10,7 +10,6 @@ set(CMAKE_ASM_NASM_COMPILE_OBJECT "<CMAKE_ASM_NASM_COMPILER> <INCLUDES> -f ${CMA
 
 file(GLOB_RECURSE SOURCES_ASM kernel/src/*.asm)
 file(GLOB_RECURSE SOURCES_CXX kernel/src/*.cpp kernel/src/*.c)
-set_source_files_properties(${SOURCES_ASM} PROPERTIES LANGUAGE ASM_NASM)
 
 set(KERNEL_TARGET tetros)
 add_executable(${KERNEL_TARGET} ${SOURCES_ASM} ${SOURCES_CXX})
@@ -32,6 +31,11 @@ target_compile_options(${KERNEL_TARGET} PRIVATE
 target_include_directories(${KERNEL_TARGET} PRIVATE kernel/include)
 target_link_libraries(${KERNEL_TARGET} PRIVATE gcc)
 target_link_options(${KERNEL_TARGET} PRIVATE -T ${CMAKE_SOURCE_DIR}/linker.ld -nostdlib -static -no-pie -mcmodel=kernel)
+include(external/uacpi/uacpi.cmake)
+
+target_compile_definitions(${KERNEL_TARGET} PRIVATE UACPI_BAREBONES_MODE)
+target_sources(tetros PRIVATE ${UACPI_SOURCES})
+target_include_directories(tetros PRIVATE ${UACPI_INCLUDES})
 
 find_program(XORRISO NAMES xorriso)
 if (NOT XORRISO)

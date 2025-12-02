@@ -1,0 +1,3 @@
+[submodule "external/uacpi"]
+	path = external/uacpi
+	url = git@github.com:uACPI/uACPI.git

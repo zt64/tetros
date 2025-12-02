@@ -39,4 +39,10 @@ namespace limine_requests {
         .id = LIMINE_HHDM_REQUEST_ID,
         .revision = 0
     };
+
+    __attribute__((used, section(".limine_requests")))
+    volatile limine_rsdp_request rsdp_request = {
+        .id = LIMINE_RSDP_REQUEST_ID,
+        .revision = 0
+    };
 }
