@@ -13,13 +13,21 @@ class Logger {
 public:
     explicit Logger(const LogLevel initial = LOG_LEVEL_DEBUG) : log_level(initial) {
     }
-    void vlog(LogLevel level, const char* fmt, va_list ap) const;
-    void log(LogLevel level, const char* fmt, ...) const;
+    void vlog(LogLevel level, const char* fmt, va_list ap) const __attribute__((format(printf, 3, 0)));
+    void log(LogLevel level, const char* fmt, ...) const __attribute__((format(printf, 3, 4)));
 
+    __attribute__ ((format (printf, 2, 3)))
     void debug(const char* fmt, ...) const;
+
+    __attribute__ ((format (printf, 2, 3)))
     void info(const char* fmt, ...) const;
+
+    __attribute__ ((format (printf, 2, 3)))
     void warn(const char* fmt, ...) const;
+
+    __attribute__ ((format (printf, 2, 3)))
     void error(const char* fmt, ...) const;
+    __attribute__ ((format (printf, 2, 3)))
     void fatal(const char* fmt, ...) const;
 
 private:

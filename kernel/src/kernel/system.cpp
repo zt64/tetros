@@ -33,9 +33,12 @@ void panic(const char* msg, ...) {
     const char* formatted = vformat(msg, ap);
     va_end(ap);
     logger.fatal(formatted);
-    screen::clear();
-    screen::draw(formatted, 0, 0, 1.5);
-    screen::flush();
+
+    if (framebuffer.size != 0) {
+        screen::clear();
+        screen::draw(formatted, 0, 0, 1.5);
+        screen::flush();
+    }
 
     for (;;) asm volatile("hlt");
 }

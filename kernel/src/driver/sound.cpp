@@ -3,7 +3,7 @@
 #include "kernel/system.hpp"
 
 static bool beep_active = false;
-static int beep_end_tick = 0;
+static uint32_t beep_end_tick = 0;
 
 void snd_play(const uint32_t frequency) {
     const uint32_t div = PIT_FREQUENCY / frequency;

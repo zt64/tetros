@@ -21,4 +21,7 @@ namespace serial {
 
     __attribute__ ((format (printf, 1, 2)))
     void printf(const char* fmt, ...);
+
+    // Returns true if serial was successfully initialized and is usable
+    bool available();
 }

@@ -8,4 +8,4 @@ char* strcpy(char* destination, const char* source);
 
 char* strcat(char* destination, const char* source);
 
-char* strncat(char* destination, const char* source, const size_t count);
+char* strncat(char* destination, const char* source, size_t count);

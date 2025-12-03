@@ -1,16 +1,12 @@
-#include <cstdint>
-
 #include "driver/screen.hpp"
-#include "driver/serial.hpp"
 #include "driver/limine/limine.h"
-#include "kernel/system.hpp"
 #include "lib/font8x8.hpp"
-#include "../../include/memory/mem.hpp"
+#include "memory/mem.hpp"
 #include "lib/log.hpp"
 
 static uint8_t* vga_buffer = nullptr;
 
-void fb_init(const limine_framebuffer *fb) {
+void fb_init(const limine_framebuffer* fb) {
     framebuffer.width = fb->width;
     framebuffer.height = fb->height;
     framebuffer.pitch = fb->pitch;
@@ -18,7 +14,7 @@ void fb_init(const limine_framebuffer *fb) {
     framebuffer.addr = fb->address;
     framebuffer.size = (framebuffer.width * framebuffer.height * framebuffer.bpp) / 8;
 
-    vga_buffer = static_cast<uint8_t*>(malloc(framebuffer.size));
+    vga_buffer = static_cast<uint8_t *>(malloc(framebuffer.size));
 
     logger.debug(
         "fb_addr = 0x%p, fb_width = %u, fb_height = %u, fb_bpp = %u",
@@ -42,7 +38,7 @@ namespace screen {
         for (uint32_t cy = 0; cy < 8; cy++) {
             for (uint32_t cx = 0; cx < 8; cx++) {
                 const uint8_t mask[8] = {1, 2, 4, 8, 16, 32, 64, 128};
-                const uint32_t color = (glyph[cy] & mask[cx]) ? fgcolor : bgcolor;
+                if (!(glyph[cy] & mask[cx])) continue;
                 // Calculate rectangle bounds for this pixel using float size
                 const uint32_t x0 = x + static_cast<uint32_t>(cx * size);
                 const uint32_t y0 = y + static_cast<uint32_t>(cy * size);
@@ -50,7 +46,7 @@ namespace screen {
                 const uint32_t y1 = y + static_cast<uint32_t>((cy + 1) * size);
                 for (uint32_t py = y0; py < y1; ++py) {
                     for (uint32_t px = x0; px < x1; ++px) {
-                        put_pixel(px, py, color);
+                        put_pixel(px, py, fgcolor);
                     }
                 }
             }
@@ -142,7 +138,9 @@ namespace screen {
     }
 
     void put_pixel(const uint32_t x, const uint32_t y, const uint32_t color) {
-        auto* location = reinterpret_cast<uint32_t *>(vga_buffer + framebuffer.pitch * y + x * (framebuffer.bpp / 8));
+        const uint64_t offset = static_cast<uint64_t>(framebuffer.pitch) * y + static_cast<uint64_t>(x) * (framebuffer.bpp / 8);
+        if (offset + sizeof(uint32_t) > framebuffer.size) return;
+        auto* location = reinterpret_cast<uint32_t *>(vga_buffer + offset);
         *location = color;
     }
 

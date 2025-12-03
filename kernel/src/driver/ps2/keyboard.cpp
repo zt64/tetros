@@ -1,10 +1,7 @@
-#include "driver/ps2/keyboard.hpp"
-#include "kernel/irq.hpp"
-#include "kernel/system.hpp"
-#include "driver/sound.hpp"
-
 #include <cstddef>
-
+#include "driver/ps2/keyboard.hpp"
+#include "kernel/system.hpp"
+#include "driver/pic.hpp"
 #include "driver/ps2/ps2.hpp"
 
 #define KB_BUFFER_SIZE  64

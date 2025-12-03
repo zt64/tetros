@@ -35,6 +35,15 @@ void* memmove(void* dst_ptr, const void* src_ptr, const size_t size) {
     return dst_ptr;
 }
 
+int32_t memcmp(const void* a, const void* b, const size_t n) {
+    const auto* p1 = static_cast<const uint8_t *>(a);
+    const auto* p2 = static_cast<const uint8_t *>(b);
+    for (uint64_t i = 0; i < n; ++i) {
+        if (p1[i] != p2[i]) return static_cast<int32_t>(p1[i]) - static_cast<int32_t>(p2[i]);
+    }
+    return 0;
+}
+
 constexpr size_t kWordSize = sizeof(uint64_t);
 
 inline void copy_forward_align(

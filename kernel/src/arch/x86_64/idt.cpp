@@ -27,6 +27,7 @@ void idt_init() {
     /* Clear out the entire IDT, initializing it to zeros */
     memset(&idt, 0, sizeof(idt_entry_t) * 256);
 
+    // Load CPU exception handlers 0 - 32
     isrs_init();
 
     idt_load();

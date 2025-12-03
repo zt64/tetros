@@ -136,7 +136,7 @@ namespace pci {
                     if (vendor_id == 0xFFFF) continue; // no device present
 
                     const auto dev_id = static_cast<uint16_t>((vendor_dev >> 16) & 0xFFFF);
-                    const Vendor* vendor = vendor_name(vendor_id); // use vendor_id, not dev_id
+                    const Vendor* vendor = vendor_name(vendor_id);
                     const char* vendor_str = vendor ? vendor->name : "Unknown";
 
                     const uint8_t class_code = get_class_code(bus, slot, function);

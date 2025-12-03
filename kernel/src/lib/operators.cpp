@@ -1,5 +1,5 @@
 #include <cstddef>
-#include "../../include/memory/mem.hpp"
+#include "memory/mem.hpp"
 
 void* operator new(const size_t size) {
     return malloc(size);

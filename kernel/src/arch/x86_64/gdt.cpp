@@ -25,8 +25,8 @@ void gdt_set_gate(
     const int32_t num,
     const uint64_t base,
     const uint64_t limit,
-    const unsigned char access,
-    const unsigned char gran
+    const uint8_t access,
+    const uint8_t gran
 ) {
     /* Set up the descriptor base address */
     gdt[num].base_low = (base & 0xFFFF);
@@ -48,7 +48,7 @@ void gdt_set_gate(
 *  to tell the processor where the new GDT is and update the
 *  new segment registers */
 void gdt_init() {
-    /* Setup the GDT pointer and limit */
+    /* Set up the GDT pointer and limit */
     gp.limit = (sizeof(gdt_entry) * 3) - 1;
     gp.base = reinterpret_cast<uintptr_t>(&gdt);
 

@@ -2,6 +2,7 @@
 
 #include <cstdarg>
 #include <cwchar>
+#include <cstdint>
 
 #include "driver/serial.hpp"
 #include "memory/mem.hpp"
@@ -162,6 +163,35 @@ int vformat(char** out, const char* format, va_list ap) {
                     pc += simple_outputi(out, u.u32, 16, 0, width, flags, 'A');
                     break;
 
+                case 'z':
+                    ++format;
+                    switch (*format) {
+                        case 'd':
+                            u.i64 = va_arg(ap, intptr_t);
+                            pc += simple_outputi(out, u.i64, 10, 1, width, flags, 'a');
+                            break;
+
+                        case 'u':
+                            u.u64 = va_arg(ap, uintptr_t);
+                            pc += simple_outputi(out, u.u64, 10, 0, width, flags, 'a');
+                            break;
+
+                        case 'x':
+                            u.u64 = va_arg(ap, uintptr_t);
+                            pc += simple_outputi(out, u.u64, 16, 0, width, flags, 'a');
+                            break;
+
+                        case 'X':
+                            u.u64 = va_arg(ap, uintptr_t);
+                            pc += simple_outputi(out, u.u64, 16, 0, width, flags, 'A');
+                            break;
+
+                        default:
+                            --format;
+                            break;
+                    }
+                    break;
+
                 case 'p':
                     u.u64 = va_arg(ap, uint64_t);
                     pc += simple_outputi(out, u.u64, 16, 0, width, flags, 'A');
@@ -301,19 +331,19 @@ int vformat(char** out, const char* format, va_list ap) {
 char* vformat(const char* fmt, va_list ap) {
     size_t cap = 128;
     for (;;) {
-        char* buf = (char*)malloc(cap);
+        const auto buf = static_cast<char *>(malloc(cap));
         if (!buf) return nullptr;
         char* p = buf;
         va_list ap2;
         va_copy(ap2, ap);
-        int written = vformat(&p, fmt, ap2);
+        const int written = vformat(&p, fmt, ap2);
         va_end(ap2);
-        if (written < (int)cap) {
+        if (written < static_cast<int>(cap)) {
             *p = '\0';
             return buf;
         }
         free(buf);
-        cap = (size_t)written + 1;
+        cap = static_cast<size_t>(written) + 1;
     }
 }
 

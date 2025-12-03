@@ -55,34 +55,22 @@ const char* exception_messages[] = {
 
 uint32_t err_line = 0;
 
-__attribute__ ((format (printf, 1, 2)))
-static void kprintf(const char* fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    char* str = vformat(fmt, ap);
-    va_end(ap);
+extern "C" [[noreturn]] void fault_handler(const regs* r) {
+    logger.fatal("%s Exception. System Halted.", exception_messages[r->int_no]);
 
-    serial::printf("%s", str);
-    screen::draw(str, 0, err_line++ * 16, 2);
-    screen::flush();
-}
-
-extern "C" void fault_handler(const regs* r) {
-    logger.fatal("%s Exception. System Halted.\n\n", exception_messages[r->int_no]);
-
-    logger.fatal("Registers:\n");
-    logger.fatal("RAX=0x%016lx RBX=0x%016lx RCX=0x%016lx RDX=0x%016lx\n", r->rax, r->rbx, r->rcx, r->rdx);
-    logger.fatal("RSI=0x%016lx RDI=0x%016lx RBP=0x%016lx\n", r->rsi, r->rdi, r->rbp);
-    logger.fatal("R8 =0x%016lx R9 =0x%016lx R10=0x%016lx R11=0x%016lx\n", r->r8, r->r9, r->r10, r->r11);
-    logger.fatal("R12=0x%016lx R13=0x%016lx R14=0x%016lx R15=0x%016lx\n", r->r12, r->r13, r->r14, r->r15);
-    logger.fatal("RIP=0x%016lx RSP=0x%016lx RFLAGS=0x%016lx\n", r->rip, r->rsp, r->rflags);
-    logger.fatal("CS=0x%04lx SS=0x%04lx\n", r->cs, r->ss);
-    logger.fatal("Int#=0x%02lx Err=0x%016lx\n", r->int_no, r->err_code);
+    logger.fatal("Registers:");
+    logger.fatal("RAX=0x%016lx RBX=0x%016lx RCX=0x%016lx RDX=0x%016lx", r->rax, r->rbx, r->rcx, r->rdx);
+    logger.fatal("RSI=0x%016lx RDI=0x%016lx RBP=0x%016lx", r->rsi, r->rdi, r->rbp);
+    logger.fatal("R8 =0x%016lx R9 =0x%016lx R10=0x%016lx R11=0x%016lx", r->r8, r->r9, r->r10, r->r11);
+    logger.fatal("R12=0x%016lx R13=0x%016lx R14=0x%016lx R15=0x%016lx", r->r12, r->r13, r->r14, r->r15);
+    logger.fatal("RIP=0x%016lx RSP=0x%016lx RFLAGS=0x%016lx", r->rip, r->rsp, r->rflags);
+    logger.fatal("CS=0x%04lx SS=0x%04lx", r->cs, r->ss);
+    logger.fatal("Int#=0x%02lx Err=0x%016lx", r->int_no, r->err_code);
 
     uint64_t cr2;
     asm volatile("mov %%cr2, %0" : "=r"(cr2));
 
-    logger.fatal("CR2=0x%016lx\n", cr2);
+    logger.fatal("CR2=0x%016lx", cr2);
 
     for (;;) asm("hlt");
 }
